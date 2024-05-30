@@ -1,0 +1,36 @@
+[package]
+name = "blob-store"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anyhow = "1.0.86"
+bincode = "1.3.3"
+dashmap = { version = "5.5.3", features = ["inline", "serde"] }
+hex = "0.4.3"
+itertools = "0.13.0"
+lru = "0.12.3"
+parking_lot = "0.12.3"
+rusqlite = { version = "0.31.0", features = [
+    "bundled",
+    "blob",
+], optional = true }
+thiserror = "1.0.61"
+# tokio = { version = "1.37.0", features = ["full"] }
+
+[features]
+default = ["local_fs", "sqlite"]
+local_fs = []
+sqlite = ["rusqlite"]
+rusqlite = ["dep:rusqlite"]
+
+
+[dev-dependencies]
+criterion = "0.3"
+rand = "0.8.5"
+tempfile = "3.10.1"
+
+
+[[bench]]
+name = "bench_blob_store"
+harness = false
