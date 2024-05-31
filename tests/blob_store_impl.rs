@@ -1,5 +1,7 @@
 mod common;
 
+use std::sync::Arc;
+
 use blob_store::prelude::*;
 
 #[test]
@@ -14,7 +16,11 @@ fn test_local_fs() {
         LocalFileSystemBlobStore::connect(tmp_dir.path())
             .map(|obj| -> Box<dyn BlobStore> { Box::new(obj) })
             .map_err(Into::into)
-    })
+    });
+    // concurrecy
+    let tmp_dir = tempfile::tempdir().unwrap();
+    let store = Arc::new(LocalFileSystemBlobStore::connect(tmp_dir.path()).unwrap());
+    common::concurrent(store);
 }
 
 #[test]
@@ -30,5 +36,9 @@ fn test_sqlite() {
         SqliteBlobStore::connect(tmp_dir.path())
             .map(|obj| -> Box<dyn BlobStore> { Box::new(obj) })
             .map_err(Into::into)
-    })
+    });
+    // concurrecy
+    let tmp_dir = tempfile::tempdir().unwrap();
+    let store = Arc::new(SqliteBlobStore::connect(tmp_dir.path()).unwrap());
+    common::concurrent(store);
 }

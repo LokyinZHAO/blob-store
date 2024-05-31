@@ -53,7 +53,18 @@ impl BlobStore for LocalFileSystemBlobStore {
     fn meta(&self, key: Key) -> Result<crate::BlobMeta> {
         let key = key.as_key();
         let path = self.key_to_path(&key);
-        let size = path.metadata()?.len().try_into().unwrap();
+        let size = path
+            .metadata()
+            .map_err(|e| {
+                if e.kind() == std::io::ErrorKind::NotFound {
+                    Error::from(crate::error::BlobError::NotFound)
+                } else {
+                    Error::from(e)
+                }
+            })?
+            .len()
+            .try_into()
+            .unwrap();
         Ok(crate::BlobMeta { size })
     }
 
@@ -69,17 +80,27 @@ impl BlobStore for LocalFileSystemBlobStore {
             }
             PutOpt::Replace(_) => open_opt.create(false),
         };
-        let mut file = open_opt.open(path).map_err(|e| {
-            if e.kind() == std::io::ErrorKind::NotFound {
-                Error::from(crate::error::BlobError::NotFound)
-            } else {
-                Error::from(e)
+        let mut file = open_opt.open(path).map_err(|e| match e.kind() {
+            std::io::ErrorKind::AlreadyExists => {
+                Error::from(crate::error::BlobError::AlreadyExists)
             }
+            std::io::ErrorKind::NotFound => Error::from(crate::error::BlobError::NotFound),
+            _ => Error::from(e),
         })?;
         match opt {
             PutOpt::Create => file.set_len(value.len().try_into().unwrap())?,
-            PutOpt::Replace(offset) => {
-                file.seek(std::io::SeekFrom::Start(offset.try_into().unwrap()))?;
+            PutOpt::Replace(range) => {
+                // check range validity
+                let valid_range = 0..file.metadata()?.len();
+                if !valid_range.contains(&range.start.try_into().unwrap())
+                    || !valid_range.contains(&range.end.try_into().unwrap())
+                {
+                    return Err(Error::from(crate::error::BlobError::RangeError));
+                }
+                if range.len() != value.len() {
+                    return Err(Error::from(crate::error::BlobError::RangeError));
+                }
+                file.seek(std::io::SeekFrom::Start(range.start.try_into().unwrap()))?;
             }
         }
         file.write_all(value).map_err(Error::from)
@@ -99,14 +120,16 @@ impl BlobStore for LocalFileSystemBlobStore {
                 }
             })?;
         if let GetOpt::Range(range) = opt {
-            file.seek(std::io::SeekFrom::Start(range.start.try_into().unwrap()))?;
+            let file_size: usize = file.metadata()?.len().try_into().unwrap();
+            let valid_range = 0..file_size;
+            if !valid_range.contains(&range.start) || !valid_range.contains(&range.end) {
+                return Err(Error::Blob(crate::error::BlobError::RangeError));
+            }
             let len = range.end - range.start;
             if len != buf.len() {
-                return Err(Error::Io(std::io::Error::new(
-                    std::io::ErrorKind::InvalidInput,
-                    "buffer length mismatch",
-                )));
+                return Err(Error::Blob(crate::error::BlobError::RangeError));
             }
+            file.seek(std::io::SeekFrom::Start(range.start.try_into().unwrap()))?;
         }
         file.read_exact(buf).map_err(Error::from)
     }
@@ -118,7 +141,13 @@ impl BlobStore for LocalFileSystemBlobStore {
             unimplemented!("Interest delete not implemented, use \"get\" before delete instead")
         }
         std::fs::remove_file(path)
-            .map_err(Error::from)
+            .map_err(|e| {
+                if e.kind() == std::io::ErrorKind::NotFound {
+                    Error::from(crate::error::BlobError::NotFound)
+                } else {
+                    Error::from(e)
+                }
+            })
             .map(|_| None)
     }
 }

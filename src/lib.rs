@@ -4,8 +4,8 @@ pub mod error;
 mod store_impl;
 
 pub mod prelude {
-    pub use super::error::Error as BlobError;
-    pub use super::error::Result as BlobResult;
+    pub use super::error::Error as BlobStoreError;
+    pub use super::error::Result as BlobStoreResult;
     pub use super::store_impl::prelude::*;
     pub use super::*;
 }
@@ -37,12 +37,12 @@ impl KeyLike for Key {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 pub enum PutOpt {
     /// Create the blob if it doesn't exist, fail if it does.
     Create,
     /// Replace the blob content if it exists, fail if it doesn't.
-    Replace(Offset),
+    Replace(BlobRange),
 }
 
 #[derive(Debug, Clone)]
@@ -53,6 +53,7 @@ pub enum GetOpt {
     Range(BlobRange),
 }
 
+#[derive(Debug, Clone)]
 pub enum DeleteOpt {
     /// Delete the blob and return its content.
     Interest(BlobRange),
@@ -62,8 +63,19 @@ pub enum DeleteOpt {
 
 pub trait BlobStore {
     fn contains(&self, key: Key) -> error::Result<bool>;
+    /// # Error
+    /// - Blob(BlobError::NotFound): the blob doesn't exist.
     fn meta(&self, key: Key) -> error::Result<BlobMeta>;
+    /// # Error
+    /// - Blob(BlobError::AlreadyExists): the blob already exists and PutOpt::Create is used.
+    /// - Blob(BlobError::NotFound): the blob doesn't exist and PutOpt::Replace is used.
+    /// - Blob(BlobError::RangeError): the range is out of bounds when PutOpt::Replace is used.
+    /// - Blob(BlobError::RangeError): the length of the buf doesn't match the PutOpt::Replace range.
     fn put(&self, key: Key, value: &[u8], opt: PutOpt) -> error::Result<()>;
+    /// # Error
+    /// - Blob(BlobError::NotFound): the blob doesn't exist.
+    /// - Blob(BlobError::RangeError): the range is out of bounds
+    /// - Blob(BlobError::RangeError): the length of the buf doesn't match the GetOpt::Range
     fn get(&self, key: Key, buf: &mut [u8], opt: GetOpt) -> error::Result<()>;
     fn get_owned(&self, key: Key, opt: GetOpt) -> error::Result<Vec<u8>> {
         let len = match &opt {
@@ -73,5 +85,7 @@ pub trait BlobStore {
         let mut buf = vec![0_u8; len];
         self.get(key, &mut buf, opt).map(|_| buf)
     }
+    /// # Error
+    /// - Blob(BlobError::NotFound): the blob doesn't exist.
     fn delete(&self, key: Key, opt: DeleteOpt) -> error::Result<Option<Vec<u8>>>;
 }

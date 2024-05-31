@@ -27,6 +27,7 @@ rusqlite = ["dep:rusqlite"]
 
 [dev-dependencies]
 criterion = "0.3"
+crossbeam-channel = "0.5.13"
 rand = "0.8.5"
 tempfile = "3.10.1"
 

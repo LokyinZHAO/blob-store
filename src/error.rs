@@ -5,7 +5,7 @@ pub type Result<T> = std::result::Result<T, Error>;
 #[derive(Debug, Error)]
 pub enum Error {
     #[error(transparent)]
-    BlobError(#[from] BlobError),
+    Blob(#[from] BlobError),
     #[error("OS I/O error: {0}")]
     Io(#[from] std::io::Error),
     #[cfg(feature = "sqlite")]
