@@ -1,5 +1,3 @@
-// mod file_pool;
-
 use std::{
     io::prelude::{Read, Seek, Write},
     path::PathBuf,
@@ -91,10 +89,8 @@ impl BlobStore for LocalFileSystemBlobStore {
             PutOpt::Create => file.set_len(value.len().try_into().unwrap())?,
             PutOpt::Replace(range) => {
                 // check range validity
-                let valid_range = 0..file.metadata()?.len();
-                if !valid_range.contains(&range.start.try_into().unwrap())
-                    || !valid_range.contains(&range.end.try_into().unwrap())
-                {
+                let valid_range = 0..usize::try_from(file.metadata()?.len()).unwrap();
+                if !crate::store_impl::helpers::range_contains(&valid_range, &range) {
                     return Err(Error::from(crate::error::BlobError::RangeError));
                 }
                 if range.len() != value.len() {
@@ -122,7 +118,7 @@ impl BlobStore for LocalFileSystemBlobStore {
         if let GetOpt::Range(range) = opt {
             let file_size: usize = file.metadata()?.len().try_into().unwrap();
             let valid_range = 0..file_size;
-            if !valid_range.contains(&range.start) || !valid_range.contains(&range.end) {
+            if !crate::store_impl::helpers::range_contains(&valid_range, &range) {
                 return Err(Error::Blob(crate::error::BlobError::RangeError));
             }
             let len = range.end - range.start;

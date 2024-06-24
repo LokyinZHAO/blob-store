@@ -37,8 +37,11 @@ fn test_sqlite() {
             .map(|obj| -> Box<dyn BlobStore> { Box::new(obj) })
             .map_err(Into::into)
     });
-    // concurrecy
+}
+
+#[test]
+fn test_mapped_file() {
     let tmp_dir = tempfile::tempdir().unwrap();
-    let store = Arc::new(SqliteBlobStore::connect(tmp_dir.path()).unwrap());
-    common::concurrent(store);
+    let store = MemMapStore::connect(tmp_dir.path()).unwrap();
+    common::write_read(&store);
 }

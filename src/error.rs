@@ -15,6 +15,12 @@ pub enum Error {
     Other(#[from] anyhow::Error),
 }
 
+impl Error {
+    pub fn other(e: impl Into<anyhow::Error>) -> Self {
+        Error::Other(e.into())
+    }
+}
+
 #[derive(Debug, Error)]
 pub enum BlobError {
     #[error("blob not found")]

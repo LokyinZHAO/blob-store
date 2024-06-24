@@ -1,4 +1,6 @@
 use std::{
+    cell::RefCell,
+    collections::HashMap,
     io::prelude::{Seek, Write},
     path,
 };
@@ -11,15 +13,12 @@ use crate::{
 };
 
 type RowID = i64;
-type Mutex<T> = parking_lot::Mutex<T>;
-type Lock<'a, T> = parking_lot::MutexGuard<'a, T>;
-type Map<K, V> = dashmap::DashMap<K, V>;
-type KeyToRowIDMap = Map<Key, RowID>;
-type ConnLock<'a> = Lock<'a, rusqlite::Connection>;
+type Map<K, V> = HashMap<K, V>;
+type KeyToRowIDMap = RefCell<Map<Key, RowID>>;
 
 pub struct SqliteBlobStore {
     root: path::PathBuf,
-    conn: Mutex<rusqlite::Connection>,
+    conn: rusqlite::Connection,
     key_to_row_map: KeyToRowIDMap,
 }
 
@@ -51,25 +50,22 @@ impl SqliteBlobStore {
             bincode::deserialize_from(std::fs::File::open(map_path)?)
                 .map_err(|e| anyhow::Error::new(e))?
         } else {
-            KeyToRowIDMap::new()
+            KeyToRowIDMap::default()
         };
         Ok(Self {
-            conn: Mutex::new(conn),
+            conn,
             key_to_row_map: map,
             root: path.into(),
         })
     }
 
-    fn open_blob<'l>(
-        map: &KeyToRowIDMap,
-        conn_lock: &'l ConnLock<'_>,
-        key: &Key,
-        read_only: bool,
-    ) -> Result<Blob<'l>> {
-        map.get(key)
-            .map(|row_id| *row_id.value())
+    fn open_blob(&self, key: &Key, read_only: bool) -> Result<Blob> {
+        self.key_to_row_map
+            .borrow()
+            .get(key)
+            .copied()
             .map(|row_id| {
-                conn_lock
+                self.conn
                     .blob_open(
                         Self::DATABASE_NAME,
                         Self::TABLE_NAME,
@@ -87,36 +83,36 @@ impl SqliteBlobStore {
 
 impl BlobStore for SqliteBlobStore {
     fn contains(&self, key: Key) -> crate::error::Result<bool> {
-        Ok(self.key_to_row_map.contains_key(&key))
+        Ok(self.key_to_row_map.borrow().contains_key(&key))
     }
 
     fn meta(&self, key: Key) -> crate::error::Result<crate::BlobMeta> {
-        let conn_lock = self.conn.lock();
-        let size = Self::open_blob(&self.key_to_row_map, &conn_lock, &key, true)?.len();
+        let size = self.open_blob(&key, true)?.len();
         Ok(crate::BlobMeta { size })
     }
 
     fn put(&self, key: Key, value: &[u8], opt: crate::PutOpt) -> crate::error::Result<()> {
-        let conn_lock = self.conn.lock();
         let mut blob = match &opt {
             crate::PutOpt::Create => {
-                if self.key_to_row_map.contains_key(&key) {
+                let mut key_to_row_map = self.key_to_row_map.borrow_mut();
+                if key_to_row_map.contains_key(&key) {
                     return Err(crate::error::BlobError::AlreadyExists.into());
                 }
-                conn_lock.execute(
+                self.conn.execute(
                     Self::SQL_INSERT,
                     [ZeroBlob(value.len().try_into().unwrap())],
                 )?;
-                let row_id = conn_lock.last_insert_rowid();
-                self.key_to_row_map.insert(key, row_id);
-                Self::open_blob(&self.key_to_row_map, &conn_lock, &key, false)?
+                let row_id = self.conn.last_insert_rowid();
+                key_to_row_map.insert(key, row_id);
+                drop(key_to_row_map);
+                self.open_blob(&key, false)?
             }
             crate::PutOpt::Replace(range) => {
-                let mut blob = Self::open_blob(&self.key_to_row_map, &conn_lock, &key, false)?;
+                let mut blob = self.open_blob(&key, false)?;
                 // check range
                 let size = blob.len();
                 let valid_range = 0..size;
-                if !valid_range.contains(&range.start) || !valid_range.contains(&range.end) {
+                if !crate::store_impl::helpers::range_contains(&valid_range, &range) {
                     return Err(crate::error::BlobError::RangeError.into());
                 }
                 if value.len() != range.len() {
@@ -126,14 +122,13 @@ impl BlobStore for SqliteBlobStore {
                 blob
             }
         };
-        blob.write(value)?;
+        blob.write_all(value)?;
         Ok(())
     }
 
     fn get(&self, key: Key, buf: &mut [u8], opt: crate::GetOpt) -> crate::error::Result<()> {
         let key = key;
-        let conn_lock = self.conn.lock();
-        let mut blob = Self::open_blob(&self.key_to_row_map, &conn_lock, &key, true)?;
+        let mut blob = self.open_blob(&key, true)?;
         match &opt {
             crate::GetOpt::All => {
                 if blob.len() != buf.len() {
@@ -147,7 +142,7 @@ impl BlobStore for SqliteBlobStore {
                     return Err(crate::error::BlobError::RangeError.into());
                 }
                 let valid_range = 0..blob.len();
-                if !valid_range.contains(&range.start) || !valid_range.contains(&range.end) {
+                if !crate::store_impl::helpers::range_contains(&valid_range, &range) {
                     return Err(crate::error::BlobError::RangeError.into());
                 }
                 blob.seek(std::io::SeekFrom::Start(range.start.try_into().unwrap()))?;
@@ -159,8 +154,8 @@ impl BlobStore for SqliteBlobStore {
 
     fn delete(&self, key: Key, opt: crate::DeleteOpt) -> crate::error::Result<Option<Vec<u8>>> {
         let key = key;
-        let row_id = match self.key_to_row_map.remove(&key) {
-            Some((_, row_id)) => row_id,
+        let row_id = match self.key_to_row_map.borrow_mut().remove(&key) {
+            Some(row_id) => row_id,
             None => return Err(crate::error::BlobError::NotFound.into()),
         };
         if let crate::DeleteOpt::Interest(_) = &opt {
@@ -170,7 +165,7 @@ impl BlobStore for SqliteBlobStore {
             // interest.reserve_exact(size - interest.len());
             // blob.raw_read_at_exact()?;
         }
-        self.conn.lock().execute(Self::SQL_DELETE, [row_id])?;
+        self.conn.execute(Self::SQL_DELETE, [row_id])?;
         Ok(None)
     }
 }

@@ -1,5 +1,3 @@
-use std::vec;
-
 pub mod error;
 mod store_impl;
 
@@ -10,6 +8,7 @@ pub mod prelude {
     pub use super::*;
 }
 
+#[derive(Debug, Clone)]
 pub struct BlobMeta {
     pub size: usize,
 }
