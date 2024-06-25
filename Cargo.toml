@@ -3,6 +3,9 @@ name = "blob-store"
 version = "0.1.0"
 edition = "2021"
 
+[lib]
+crate-type = ["cdylib", "rlib", "staticlib"]
+
 [dependencies]
 memmap2 = { version = "0.9.4", optional = true }
 anyhow = "1.0.86"
@@ -19,6 +22,8 @@ rusqlite = { version = "0.31.0", features = [
 thiserror = "1.0.61"
 cxx = { version = "1.0.124", features = ["c++14", "c++17"] }
 
+[build-dependencies]
+cxx-build = "1.0.124"
 
 [features]
 default = ["local_fs", "sqlite", "memmap"]
@@ -29,12 +34,6 @@ memmap = ["dep:memmap2"]
 
 
 [dev-dependencies]
-criterion = "0.3"
 crossbeam-channel = "0.5.13"
 rand = "0.8.5"
 tempfile = "3.10.1"
-
-
-[[bench]]
-name = "bench_blob_store"
-harness = false

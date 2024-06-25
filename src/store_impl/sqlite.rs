@@ -2,7 +2,7 @@ use std::{
     cell::RefCell,
     collections::HashMap,
     io::prelude::{Seek, Write},
-    path,
+    path::{self, PathBuf},
 };
 
 use rusqlite::blob::{Blob, ZeroBlob};
@@ -33,14 +33,16 @@ impl SqliteBlobStore {
     const DB_FILE: &'static str = "blobs.db";
     const MAP_FILE: &'static str = "blobs.map.dump";
 
-    pub fn connect(path: &path::Path) -> Result<Self> {
+    pub fn connect(path: impl Into<PathBuf>) -> Result<Self> {
+        let path = path.into();
         let db_path = {
-            let mut path = path.to_path_buf();
+            let mut path = path.clone();
             path.push(Self::DB_FILE);
             path
         };
         let map_path = {
-            let mut path = path.to_path_buf();
+            let mut path = path.clone();
+
             path.push(Self::MAP_FILE);
             path
         };

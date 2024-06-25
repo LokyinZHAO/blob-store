@@ -1,4 +1,5 @@
 pub mod error;
+mod ffi;
 mod store_impl;
 
 pub mod prelude {
