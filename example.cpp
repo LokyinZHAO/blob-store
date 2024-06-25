@@ -18,8 +18,10 @@ int main() {
   using blob_store::key_t;
   using blob_store::local_fs::blob_store_t;
 
+  // connect to blob store
   constexpr std::size_t VALUE_SIZE{1024};
   auto store = blob_store::local_fs::blob_store_connect("./var/tmp-dev");
+  // generate random key and value
   auto key = key_t{};
   auto value = std::vector<uint8_t>{};
   value.reserve(VALUE_SIZE);
@@ -52,6 +54,11 @@ int main() {
     auto slice = rust::Slice<uint8_t>{value2.data(), value2.size()};
     store->get_all(key, slice);
     assert(value == value2);
+  }
+  {
+    std::cout << "remove blob" << std::endl;
+    store->remove(key);
+    assert(!store->contains(key));
   }
   return 0;
 }

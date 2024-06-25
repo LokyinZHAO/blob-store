@@ -1,16 +1,14 @@
 use crate::prelude::*;
 
-struct LocalFileSystemBlobStoreFFI(LocalFileSystemBlobStore);
+struct MemMapFileStoreFFI(MemMapStore);
 
-fn blob_store_connect(
-    path: &cxx::CxxString,
-) -> crate::error::Result<Box<LocalFileSystemBlobStoreFFI>> {
-    LocalFileSystemBlobStore::connect(path.to_str().unwrap())
-        .map(LocalFileSystemBlobStoreFFI)
+fn blob_store_connect(path: &cxx::CxxString) -> crate::error::Result<Box<MemMapFileStoreFFI>> {
+    MemMapStore::connect(path.to_str().unwrap())
+        .map(MemMapFileStoreFFI)
         .map(Box::new)
 }
 
-impl LocalFileSystemBlobStoreFFI {
+impl MemMapFileStoreFFI {
     fn contains(&self, key: [u8; 20]) -> crate::error::Result<bool> {
         self.0.contains(key)
     }
@@ -42,12 +40,12 @@ impl LocalFileSystemBlobStoreFFI {
     }
 }
 
-#[cxx::bridge(namespace = "blob_store::local_fs")]
+#[cxx::bridge(namespace = "blob_store::memmap")]
 mod ffi {
     extern "Rust" {
         #[cxx_name = "blob_store_t"]
-        type LocalFileSystemBlobStoreFFI;
-        fn blob_store_connect(path: &CxxString) -> Result<Box<LocalFileSystemBlobStoreFFI>>;
+        type MemMapFileStoreFFI;
+        fn blob_store_connect(path: &CxxString) -> Result<Box<MemMapFileStoreFFI>>;
         fn contains(&self, key: [u8; 20]) -> Result<bool>;
         fn blob_size(&self, key: [u8; 20]) -> Result<usize>;
         fn create(&self, key: [u8; 20], value: &[u8]) -> Result<()>;

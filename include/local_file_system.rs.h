@@ -574,6 +574,7 @@ struct blob_store_t final : public ::rust::Opaque {
   void put(::std::array<::std::uint8_t, 20> key, ::rust::Slice<::std::uint8_t const> value, ::std::size_t offset) const;
   void get_all(::std::array<::std::uint8_t, 20> key, ::rust::Slice<::std::uint8_t > buf) const;
   void get_offset(::std::array<::std::uint8_t, 20> key, ::rust::Slice<::std::uint8_t > buf, ::std::size_t offset) const;
+  void remove(::std::array<::std::uint8_t, 20> key) const;
   ~blob_store_t() = delete;
 
 private:

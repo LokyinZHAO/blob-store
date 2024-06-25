@@ -558,15 +558,15 @@ std::size_t align_of() {
 } // namespace rust
 
 namespace blob_store {
-  namespace sqlite {
+  namespace memmap {
     struct blob_store_t;
   }
 }
 
 namespace blob_store {
-namespace sqlite {
-#ifndef CXXBRIDGE1_STRUCT_blob_store$sqlite$blob_store_t
-#define CXXBRIDGE1_STRUCT_blob_store$sqlite$blob_store_t
+namespace memmap {
+#ifndef CXXBRIDGE1_STRUCT_blob_store$memmap$blob_store_t
+#define CXXBRIDGE1_STRUCT_blob_store$memmap$blob_store_t
 struct blob_store_t final : public ::rust::Opaque {
   bool contains(::std::array<::std::uint8_t, 20> key) const;
   ::std::size_t blob_size(::std::array<::std::uint8_t, 20> key) const;
@@ -584,8 +584,8 @@ private:
     static ::std::size_t align() noexcept;
   };
 };
-#endif // CXXBRIDGE1_STRUCT_blob_store$sqlite$blob_store_t
+#endif // CXXBRIDGE1_STRUCT_blob_store$memmap$blob_store_t
 
-::rust::Box<::blob_store::sqlite::blob_store_t> blob_store_connect(::std::string const &path);
-} // namespace sqlite
+::rust::Box<::blob_store::memmap::blob_store_t> blob_store_connect(::std::string const &path);
+} // namespace memmap
 } // namespace blob_store

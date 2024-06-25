@@ -1,17 +1,58 @@
 use crate::prelude::*;
 
-fn blob_store_connect(path: &cxx::CxxString) -> crate::error::Result<Box<SqliteBlobStore>> {
-    SqliteBlobStore::connect(path.to_str().unwrap()).map(|obj| Box::new(obj))
+struct SqliteStoreFFI(SqliteBlobStore);
+
+fn blob_store_connect(path: &cxx::CxxString) -> crate::error::Result<Box<SqliteStoreFFI>> {
+    SqliteBlobStore::connect(path.to_str().unwrap())
+        .map(SqliteStoreFFI)
+        .map(Box::new)
+}
+
+impl SqliteStoreFFI {
+    fn contains(&self, key: [u8; 20]) -> crate::error::Result<bool> {
+        self.0.contains(key)
+    }
+
+    fn blob_size(&self, key: [u8; 20]) -> crate::error::Result<usize> {
+        self.0.meta(key).map(|meta| meta.size)
+    }
+
+    fn create(&self, key: [u8; 20], value: &[u8]) -> crate::error::Result<()> {
+        self.0.put(key, value, PutOpt::Create)
+    }
+
+    fn put(&self, key: [u8; 20], value: &[u8], offset: usize) -> crate::error::Result<()> {
+        self.0
+            .put(key, value, PutOpt::Replace(offset..offset + value.len()))
+    }
+
+    fn get_all(&self, key: [u8; 20], buf: &mut [u8]) -> crate::error::Result<()> {
+        self.0.get(key, buf, GetOpt::All)
+    }
+
+    fn get_offset(&self, key: [u8; 20], buf: &mut [u8], offset: usize) -> crate::error::Result<()> {
+        self.0
+            .get(key, buf, GetOpt::Range(offset..offset + buf.len()))
+    }
+
+    fn delete(&self, key: [u8; 20]) -> crate::error::Result<()> {
+        self.0.delete(key, DeleteOpt::Discard).map(|_| ())
+    }
 }
 
 #[cxx::bridge(namespace = "blob_store::sqlite")]
 mod ffi {
-
     extern "Rust" {
-        type SqliteBlobStore;
-        fn blob_store_connect(path: &CxxString) -> Result<Box<SqliteBlobStore>>;
-        // fn create(store: &SqliteBlobStore, key: Key, value: &[u8]) -> Result<()>;
-        // fn put(store: &SqliteBlobStore, key: Key, value: &[u8], offset: usize) -> Result<()>;
-        // fn get(store: &SqliteBlobStore, key: Key, buf: &mut [u8]) -> Result<()>;
+        #[cxx_name = "blob_store_t"]
+        type SqliteStoreFFI;
+        fn blob_store_connect(path: &CxxString) -> Result<Box<SqliteStoreFFI>>;
+        fn contains(&self, key: [u8; 20]) -> Result<bool>;
+        fn blob_size(&self, key: [u8; 20]) -> Result<usize>;
+        fn create(&self, key: [u8; 20], value: &[u8]) -> Result<()>;
+        fn put(&self, key: [u8; 20], value: &[u8], offset: usize) -> Result<()>;
+        fn get_all(&self, key: [u8; 20], buf: &mut [u8]) -> Result<()>;
+        fn get_offset(&self, key: [u8; 20], buf: &mut [u8], offset: usize) -> Result<()>;
+        #[cxx_name = "remove"]
+        fn delete(&self, key: [u8; 20]) -> Result<()>;
     }
 }
