@@ -23,7 +23,11 @@ int main(int argc, char **argv) {
   }
   std::filesystem::path dev_path{argv[1]};
 
+  /* using different namespace to enable the corresponding store backend */
+  /* the performance of the backends are benchmarked in bench.cpp */
   using namespace blob_store::local_fs;
+  // using namespace blob_store::memmap;
+  // using namespace blob_store::sqlite;
 
   using blob_store::key_t;
   using blob_store::local_fs::blob_store_t;

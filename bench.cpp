@@ -25,6 +25,12 @@ USAGE: bench <Device> <Load> <Size>
     Load:     Set test load
     Size:     Set blob size(in KB))";
 
+#ifdef _ENABLE_SQLITE
+constexpr bool ENABLE_SQLITE = true;
+#else
+constexpr bool ENABLE_SQLITE = false;
+#endif
+
 auto main(int argc, char **argv) -> int {
   if (argc != 4) {
     std::cerr << help_message << std::endl;
@@ -172,7 +178,7 @@ auto main(int argc, char **argv) -> int {
               << "MB/ms" << std::endl;
   }
   // sqlite
-  {
+  if constexpr (ENABLE_SQLITE) {
     auto path = std::filesystem::path{dev_path} / "sqlite";
     std::filesystem::create_directory(path);
     using namespace blob_store::sqlite;

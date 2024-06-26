@@ -26,7 +26,7 @@ cxx = { version = "1.0.124", features = ["c++14", "c++17"] }
 cxx-build = "1.0.124"
 
 [features]
-default = ["local_fs", "sqlite", "memmap"]
+default = ["local_fs", "memmap"]
 local_fs = []
 sqlite = ["rusqlite"]
 rusqlite = ["dep:rusqlite"]
