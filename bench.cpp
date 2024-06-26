@@ -23,7 +23,7 @@ constexpr std::string_view help_message = R"(\
 USAGE: bench <Device> <Load> <Size>
     Device:   Set store device path
     Load:     Set test load
-    Size:     Set blob size(in MB))";
+    Size:     Set blob size(in KB))";
 
 auto main(int argc, char **argv) -> int {
   if (argc != 4) {
@@ -35,7 +35,8 @@ auto main(int argc, char **argv) -> int {
   std::size_t blob_size{std::stoul(argv[3])};
   std::cout << "Device: " << dev_path << std::endl;
   std::cout << "Load: " << load << std::endl;
-  std::cout << "Blob size: " << blob_size << "MB" << std::endl;
+  std::cout << "Blob size: " << blob_size << "KB" << std::endl;
+  blob_size <<= 10;
 
   if (dev_path.empty()) {
     std::cerr << "Please specify the store device path" << std::endl;
@@ -69,8 +70,8 @@ auto main(int argc, char **argv) -> int {
       for (std::size_t i = 0; i < load; i++) {
         auto key = blob_store::key_t{};
         auto value = std::vector<uint8_t>{};
-        value.reserve(blob_size << 20);
-        std::generate_n(std::back_inserter(value), blob_size << 20,
+        value.reserve(blob_size);
+        std::generate_n(std::back_inserter(value), blob_size,
                         [&]() { return distrib(gen); });
         std::generate(key.begin(), key.end(), [&]() { return distrib(gen); });
         store->create(key, {value.data(), value.size()});
@@ -84,8 +85,8 @@ auto main(int argc, char **argv) -> int {
       // get blobs
       std::chrono::steady_clock::time_point start =
           std::chrono::steady_clock::now();
-      auto value2 = std::vector<uint8_t>(blob_size << 20);
-      value2.resize(blob_size << 20);
+      auto value2 = std::vector<uint8_t>(blob_size);
+      value2.resize(blob_size);
       for (auto &[key, value] : key_values) {
         store->get_all(key, {value2.data(), value2.size()});
         assert(value2 == value);
@@ -106,7 +107,7 @@ auto main(int argc, char **argv) -> int {
                      .count()
               << "ms" << std::endl;
     std::cout << "throughput: " << std::fixed << std::setprecision(4)
-              << static_cast<double>(load * blob_size) /
+              << static_cast<double>(load * (blob_size >> 10)) /
                      (std::chrono::duration_cast<std::chrono::milliseconds>(
                           put_elapsed + get_elapsed)
                           .count())
@@ -127,8 +128,8 @@ auto main(int argc, char **argv) -> int {
       for (std::size_t i = 0; i < load; i++) {
         auto key = blob_store::key_t{};
         auto value = std::vector<uint8_t>{};
-        value.reserve(blob_size << 20);
-        std::generate_n(std::back_inserter(value), blob_size << 20,
+        value.reserve(blob_size);
+        std::generate_n(std::back_inserter(value), blob_size,
                         [&]() { return distrib(gen); });
         std::generate(key.begin(), key.end(), [&]() { return distrib(gen); });
         store->create(key, {value.data(), value.size()});
@@ -142,8 +143,8 @@ auto main(int argc, char **argv) -> int {
       // get blobs
       std::chrono::steady_clock::time_point start =
           std::chrono::steady_clock::now();
-      auto value2 = std::vector<uint8_t>(blob_size << 20);
-      value2.resize(blob_size << 20);
+      auto value2 = std::vector<uint8_t>(blob_size);
+      value2.resize(blob_size);
       for (auto &[key, value] : key_values) {
         store->get_all(key, {value2.data(), value2.size()});
         assert(value2 == value);
@@ -164,7 +165,7 @@ auto main(int argc, char **argv) -> int {
                      .count()
               << "ms" << std::endl;
     std::cout << "throughput: "
-              << static_cast<double>(load * blob_size) /
+              << static_cast<double>(load * (blob_size >> 10)) /
                      (std::chrono::duration_cast<std::chrono::milliseconds>(
                           put_elapsed + get_elapsed)
                           .count())
@@ -185,8 +186,8 @@ auto main(int argc, char **argv) -> int {
       for (std::size_t i = 0; i < load; i++) {
         auto key = blob_store::key_t{};
         auto value = std::vector<uint8_t>{};
-        value.reserve(blob_size << 20);
-        std::generate_n(std::back_inserter(value), blob_size << 20,
+        value.reserve(blob_size);
+        std::generate_n(std::back_inserter(value), blob_size,
                         [&]() { return distrib(gen); });
         std::generate(key.begin(), key.end(), [&]() { return distrib(gen); });
         store->create(key, {value.data(), value.size()});
@@ -200,8 +201,8 @@ auto main(int argc, char **argv) -> int {
       // get blobs
       std::chrono::steady_clock::time_point start =
           std::chrono::steady_clock::now();
-      auto value2 = std::vector<uint8_t>(blob_size << 20);
-      value2.resize(blob_size << 20);
+      auto value2 = std::vector<uint8_t>(blob_size);
+      value2.resize(blob_size);
       for (auto &[key, value] : key_values) {
         store->get_all(key, {value2.data(), value2.size()});
         assert(value2 == value);
@@ -222,7 +223,7 @@ auto main(int argc, char **argv) -> int {
                      .count()
               << "ms" << std::endl;
     std::cout << "throughput: "
-              << static_cast<double>(load * blob_size) /
+              << static_cast<double>(load * (blob_size >> 10)) /
                      (std::chrono::duration_cast<std::chrono::milliseconds>(
                           put_elapsed + get_elapsed)
                           .count())
