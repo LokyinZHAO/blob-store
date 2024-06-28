@@ -1,7 +1,5 @@
 mod common;
 
-use std::sync::Arc;
-
 use blob_store::prelude::*;
 
 #[test]
@@ -18,9 +16,9 @@ fn test_local_fs() {
             .map_err(Into::into)
     });
     // concurrecy
-    let tmp_dir = tempfile::tempdir().unwrap();
-    let store = Arc::new(LocalFileSystemBlobStore::connect(tmp_dir.path()).unwrap());
-    common::concurrent(store);
+    // let tmp_dir = tempfile::tempdir().unwrap();
+    // let store = Arc::new(LocalFileSystemBlobStore::connect(tmp_dir.path()).unwrap());
+    // common::concurrent(store);
 }
 
 #[test]

@@ -1,4 +1,5 @@
 #include "blob_store.h"
+#include "cxx.h"
 #include "local_file_system.rs.h"
 #include <algorithm>
 #include <array>
@@ -79,6 +80,17 @@ int main(int argc, char **argv) {
     std::cout << "remove blob" << std::endl;
     store->remove(key);
     assert(!store->contains(key));
+  }
+  {
+    std::cout << "error handle: " << std::flush;
+    try { // use try-catch to handle any error
+      // get a non-exist key will throw an exception
+      store->get_all(key, rust::Slice<uint8_t>{nullptr, 0});
+    } catch (rust::Error
+                 &err) { // rust::Error is derived from std::exception,
+                         // which can also be caught by "std::exception & err"
+      std::cerr << err.what() << std::endl;
+    }
   }
   return 0;
 }

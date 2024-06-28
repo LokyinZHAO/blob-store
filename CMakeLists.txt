@@ -61,6 +61,7 @@ add_custom_command(
     COMMAND ${CMAKE_COMMAND} -E copy ${CXX_BRIDGE}/src/ffi/local_file_system.rs.h ${CMAKE_CURRENT_SOURCE_DIR}/include/
     COMMAND ${CMAKE_COMMAND} -E copy ${CXX_BRIDGE}/src/ffi/sqlite.rs.h ${CMAKE_CURRENT_SOURCE_DIR}/include/
     COMMAND ${CMAKE_COMMAND} -E copy ${CXX_BRIDGE}/src/ffi/memmap.rs.h ${CMAKE_CURRENT_SOURCE_DIR}/include/
+    COMMAND ${CMAKE_COMMAND} -E copy ${CXX_BRIDGE}/../rust/cxx.h ${CMAKE_CURRENT_SOURCE_DIR}/include/
     DEPENDS 
         ${CMAKE_CURRENT_SOURCE_DIR}/build.rs
         ${CMAKE_CURRENT_SOURCE_DIR}/src/ffi/local_file_system.rs

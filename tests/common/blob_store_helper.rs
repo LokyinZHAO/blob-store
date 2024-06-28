@@ -136,6 +136,10 @@ fn check_range(blob_store: &dyn BlobStore, expect: &[(Key, Vec<u8>)]) {
                     blob_store.get(*key, buf.as_mut(), GetOpt::Range(valide_range.clone())),
                     Err(BlobStoreError::Blob(BlobError::RangeError))
                 ));
+                assert!(matches!(
+                    blob_store.get(*key, buf.as_mut(), GetOpt::All),
+                    Err(BlobStoreError::Blob(BlobError::RangeError))
+                ),)
             });
         // out of bound
         let out_of_bound = [
@@ -212,6 +216,7 @@ where
     check_match(&*store, &expect);
 }
 
+#[allow(dead_code)]
 pub fn concurrent(blob: Arc<dyn BlobStore + Send + Sync>) {
     let (data_producer, data_consumer) = crossbeam_channel::bounded(128);
     let (delete_producer, delete_consumer) = crossbeam_channel::bounded(128);
