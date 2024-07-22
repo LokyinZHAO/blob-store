@@ -17,7 +17,7 @@ pub struct BlobMeta {
 pub type BlobRange = std::ops::Range<usize>;
 pub type Offset = usize;
 
-pub type Key = [u8; 20];
+pub type Key = [u8; 8];
 
 pub trait KeyLike {
     fn as_key(&self) -> Key;
@@ -25,15 +25,7 @@ pub trait KeyLike {
 
 impl KeyLike for u64 {
     fn as_key(&self) -> Key {
-        let mut key = [0; 20];
-        key[0..8].copy_from_slice(&self.to_be_bytes());
-        key
-    }
-}
-
-impl KeyLike for Key {
-    fn as_key(&self) -> Key {
-        *self
+        self.to_le_bytes()
     }
 }
 

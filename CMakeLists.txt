@@ -1,5 +1,4 @@
 cmake_minimum_required(VERSION 3.15)
-project(blob_store)
 
 option(ENABLE_LTO "Enable cross language linking time optimization" ON)
 if(ENABLE_LTO)

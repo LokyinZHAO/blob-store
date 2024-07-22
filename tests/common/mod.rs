@@ -11,7 +11,7 @@ fn gen_random(size: usize) -> (Key, Vec<u8>) {
         .sample_iter(rand::distributions::Standard)
         .take(size)
         .collect();
-    let mut key: Key = [0; 20];
+    let mut key: Key = Key::default();
     rng.fill(&mut key[..]);
     (key, data)
 }

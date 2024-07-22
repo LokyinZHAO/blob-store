@@ -5,7 +5,7 @@ use std::{
 
 use crate::{
     error::{Error, Result},
-    BlobStore, DeleteOpt, GetOpt, Key, KeyLike, PutOpt,
+    BlobStore, DeleteOpt, GetOpt, Key, PutOpt,
 };
 
 pub struct LocalFileSystemBlobStore {
@@ -43,13 +43,11 @@ impl LocalFileSystemBlobStore {
 
 impl BlobStore for LocalFileSystemBlobStore {
     fn contains(&self, key: Key) -> Result<bool> {
-        let key = key.as_key();
         let path = self.key_to_path(&key);
         path.try_exists().map_err(Error::from)
     }
 
     fn meta(&self, key: Key) -> Result<crate::BlobMeta> {
-        let key = key.as_key();
         let path = self.key_to_path(&key);
         let size = path
             .metadata()
@@ -67,7 +65,6 @@ impl BlobStore for LocalFileSystemBlobStore {
     }
 
     fn put(&self, key: Key, value: &[u8], opt: PutOpt) -> Result<()> {
-        let key = key.as_key();
         let path = self.key_to_path(&key);
         let mut open_opt = std::fs::OpenOptions::new();
         open_opt.read(true).write(true);
@@ -103,7 +100,6 @@ impl BlobStore for LocalFileSystemBlobStore {
     }
 
     fn get(&self, key: Key, buf: &mut [u8], opt: GetOpt) -> Result<()> {
-        let key = key.as_key();
         let path = self.key_to_path(&key);
         let mut file = std::fs::OpenOptions::new()
             .read(true)
@@ -115,23 +111,31 @@ impl BlobStore for LocalFileSystemBlobStore {
                     Error::from(e)
                 }
             })?;
-        if let GetOpt::Range(range) = opt {
-            let file_size: usize = file.metadata()?.len().try_into().unwrap();
-            let valid_range = 0..file_size;
-            if !crate::store_impl::helpers::range_contains(&valid_range, &range) {
-                return Err(Error::Blob(crate::error::BlobError::RangeError));
+        match opt {
+            GetOpt::All => {
+                let file_size: usize = file.metadata()?.len().try_into().unwrap();
+                if file_size != buf.len() {
+                    return Err(Error::from(crate::error::BlobError::RangeError));
+                }
+                file.seek(std::io::SeekFrom::Start(0))?;
             }
-            let len = range.end - range.start;
-            if len != buf.len() {
-                return Err(Error::Blob(crate::error::BlobError::RangeError));
+            GetOpt::Range(range) => {
+                let file_size: usize = file.metadata()?.len().try_into().unwrap();
+                let valid_range = 0..file_size;
+                if !crate::store_impl::helpers::range_contains(&valid_range, &range) {
+                    return Err(Error::Blob(crate::error::BlobError::RangeError));
+                }
+                let len = range.end - range.start;
+                if len != buf.len() {
+                    return Err(Error::Blob(crate::error::BlobError::RangeError));
+                }
+                file.seek(std::io::SeekFrom::Start(range.start.try_into().unwrap()))?;
             }
-            file.seek(std::io::SeekFrom::Start(range.start.try_into().unwrap()))?;
         }
         file.read_exact(buf).map_err(Error::from)
     }
 
     fn delete(&self, key: Key, opt: DeleteOpt) -> Result<Option<Vec<u8>>> {
-        let key = key.as_key();
         let path = self.key_to_path(&key);
         if let DeleteOpt::Interest(_) = &opt {
             unimplemented!("Interest delete not implemented, use \"get\" before delete instead")

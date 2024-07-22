@@ -137,10 +137,11 @@ fn check_range(blob_store: &dyn BlobStore, expect: &[(Key, Vec<u8>)]) {
                     Err(BlobStoreError::Blob(BlobError::RangeError))
                 ));
                 assert!(matches!(
-                    blob_store.get(*key, buf.as_mut(), GetOpt::All),
+                    blob_store.get(*key, buf, GetOpt::All),
                     Err(BlobStoreError::Blob(BlobError::RangeError))
-                ),)
+                ),);
             });
+
         // out of bound
         let out_of_bound = [
             valide_range.end + 1..valide_range.end + 1 + 128,
