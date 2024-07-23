@@ -34,8 +34,10 @@ endif ()
 set(CRATE_NAME "blob_store")
 set(CARGO_TARGET ${CMAKE_BINARY_DIR}/target)
 set(CXX_BRIDGE ${CARGO_TARGET}/cxxbridge/blob-store)
+set(OUT_DIR ${CMAKE_CURRENT_SOURCE_DIR}/out)
 
 set(RUST_PART_LIB "${CARGO_TARGET}/${TARGET_DIR}/lib${CRATE_NAME}.a")
+set(RUST_PART_LIB_SHARED "${CARGO_TARGET}/${TARGET_DIR}/lib${CRATE_NAME}.so")
 
 set(RUST_PART_CXX 
     ${CXX_BRIDGE}/src/ffi/local_file_system.rs.cc
@@ -52,28 +54,43 @@ if (FEAT_SQLITE)
 endif()
 
 add_library(blob-store-rs STATIC ${RUST_PART_CXX})
-target_include_directories(blob-store-rs PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include/)
+target_include_directories(blob-store-rs PUBLIC ${OUT_DIR}/include/)
 add_custom_command(
     OUTPUT ${RUST_PART_CXX} ${RUST_PART_LIB}
     # COMMAND ${CMAKE_COMMAND} -E echo "Environment variable RUST_FLAGS is $ENV{RUSTFLAGS}"
     COMMAND CARGO_TARGET_DIR=${CARGO_TARGET} ${CARGO_CMD} ${CARGO_FEATURES}
-    COMMAND ${CMAKE_COMMAND} -E copy ${CXX_BRIDGE}/src/ffi/local_file_system.rs.h ${CMAKE_CURRENT_SOURCE_DIR}/include/
-    COMMAND ${CMAKE_COMMAND} -E copy ${CXX_BRIDGE}/src/ffi/sqlite.rs.h ${CMAKE_CURRENT_SOURCE_DIR}/include/
-    COMMAND ${CMAKE_COMMAND} -E copy ${CXX_BRIDGE}/src/ffi/memmap.rs.h ${CMAKE_CURRENT_SOURCE_DIR}/include/
-    COMMAND ${CMAKE_COMMAND} -E copy ${CXX_BRIDGE}/../rust/cxx.h ${CMAKE_CURRENT_SOURCE_DIR}/include/
+)
+
+add_custom_target(
+    dump_out
+    # OUTPUT ${RUST_PART_CXX} ${RUST_PART_LIB}
+    # COMMAND ${CMAKE_COMMAND} -E echo "Environment variable RUST_FLAGS is $ENV{RUSTFLAGS}"
+    COMMAND CARGO_TARGET_DIR=${CARGO_TARGET} ${CARGO_CMD} ${CARGO_FEATURES}
+    COMMAND ${CMAKE_COMMAND} -E copy ${CXX_BRIDGE}/src/ffi/local_file_system.rs.h ${OUT_DIR}/include/
+    COMMAND ${CMAKE_COMMAND} -E copy ${CXX_BRIDGE}/src/ffi/sqlite.rs.h ${OUT_DIR}/include/
+    COMMAND ${CMAKE_COMMAND} -E copy ${CXX_BRIDGE}/src/ffi/memmap.rs.h ${OUT_DIR}/include/
+    COMMAND ${CMAKE_COMMAND} -E copy ${CXX_BRIDGE}/../rust/cxx.h ${OUT_DIR}/include/
+    COMMAND ${CMAKE_COMMAND} -E copy ${RUST_PART_LIB} ${OUT_DIR}/lib/
+    COMMAND ${CMAKE_COMMAND} -E copy ${RUST_PART_LIB_SHARED} ${OUT_DIR}/lib/
     DEPENDS 
         ${CMAKE_CURRENT_SOURCE_DIR}/build.rs
         ${CMAKE_CURRENT_SOURCE_DIR}/src/ffi/local_file_system.rs
         ${CMAKE_CURRENT_SOURCE_DIR}/src/ffi/sqlite.rs
         ${CMAKE_CURRENT_SOURCE_DIR}/src/ffi/memmap.rs
+    COMMENT "Copying Rust artifacts to the output directory"
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 )
 target_link_libraries(blob-store-rs ${RUST_PART_LIB})
 
-add_executable(example example.cpp)
+add_library(blob-store-boundle-static STATIC IMPORTED)
+set_target_properties(blob-store-boundle-static PROPERTIES IMPORTED_LOCATION ${OUT_DIR}/lib/lib${CRATE_NAME}.a)
+add_library(blob-store-boundle-shared SHARED IMPORTED)
+set_target_properties(blob-store-boundle-shared PROPERTIES IMPORTED_LOCATION ${OUT_DIR}/lib/lib${CRATE_NAME}.so)
+
+add_executable(example EXCLUDE_FROM_ALL example.cpp)
 target_link_libraries(example blob-store-rs)
 
-add_executable(bench bench.cpp)
+add_executable(bench EXCLUDE_FROM_ALL bench.cpp)
 if(FEAT_SQLITE)
     target_compile_definitions(bench PUBLIC _ENABLE_SQLITE)
 endif(FEAT_SQLITE)
