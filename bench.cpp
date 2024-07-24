@@ -79,7 +79,8 @@ auto main(int argc, char **argv) -> int {
         value.reserve(blob_size);
         std::generate_n(std::back_inserter(value), blob_size,
                         [&]() { return distrib(gen); });
-        std::generate(key.begin(), key.end(), [&]() { return distrib(gen); });
+        std::generate_n(reinterpret_cast<uint8_t *>(&key), sizeof(key),
+                        [&]() { return distrib(gen); });
         store->create(key, {value.data(), value.size()});
         key_values.emplace_back(key, std::move(value));
       }
@@ -137,7 +138,9 @@ auto main(int argc, char **argv) -> int {
         value.reserve(blob_size);
         std::generate_n(std::back_inserter(value), blob_size,
                         [&]() { return distrib(gen); });
-        std::generate(key.begin(), key.end(), [&]() { return distrib(gen); });
+
+        std::generate_n(reinterpret_cast<uint8_t *>(&key), sizeof(key),
+                        [&]() { return distrib(gen); });
         store->create(key, {value.data(), value.size()});
         key_values.emplace_back(key, std::move(value));
       }
@@ -195,7 +198,8 @@ auto main(int argc, char **argv) -> int {
         value.reserve(blob_size);
         std::generate_n(std::back_inserter(value), blob_size,
                         [&]() { return distrib(gen); });
-        std::generate(key.begin(), key.end(), [&]() { return distrib(gen); });
+        std::generate_n(reinterpret_cast<uint8_t *>(&key), sizeof(key),
+                        [&]() { return distrib(gen); });
         store->create(key, {value.data(), value.size()});
         key_values.emplace_back(key, std::move(value));
       }

@@ -2,7 +2,6 @@
 #include "cxx.h"
 #include "local_file_system.rs.h"
 #include <algorithm>
-#include <array>
 #include <cassert>
 #include <cstddef>
 #include <cstdint>
@@ -47,7 +46,8 @@ int main(int argc, char **argv) {
       std::numeric_limits<std::uint8_t>::max()};
   std::generate_n(std::back_inserter(value), VALUE_SIZE,
                   [&]() { return distrib(gen); });
-  std::generate(key.begin(), key.end(), [&]() { return distrib(gen); });
+  std::generate_n(reinterpret_cast<uint8_t *>(&key), sizeof(key),
+                  [&]() { return distrib(gen); });
   {
     std::cout << "put blob" << std::endl;
     auto slice = rust::Slice<const uint8_t>{value.data(), value.size()};
