@@ -34,18 +34,18 @@ set(CRATE_NAME "blob_store")
 set(CARGO_TARGET ${CMAKE_BINARY_DIR}/target)
 set(CXX_BRIDGE ${CARGO_TARGET}/cxxbridge/blob-store)
 set(OUT_DIR ${CMAKE_CURRENT_SOURCE_DIR}/out)
+set(CARGO_FEATURES "--features=default")
 
 set(RUST_PART_LIB "${CARGO_TARGET}/${TARGET_DIR}/lib${CRATE_NAME}.a")
 set(RUST_PART_LIB_SHARED "${CARGO_TARGET}/${TARGET_DIR}/lib${CRATE_NAME}.so")
+
+option(FEAT_SQLITE "Enable SQLITE backend feature" OFF)
 
 set(RUST_PART_CXX 
     ${CXX_BRIDGE}/src/ffi/local_file_system.rs.cc
     ${CXX_BRIDGE}/src/ffi/memmap.rs.cc
 )
 
-set(CARGO_FEATURES "--features=default")
-
-option(FEAT_SQLITE "Enable SQLITE backend feature" OFF)
 if (FEAT_SQLITE)
     message(STATUS "Enabling SQLITE backend feature")
     list(APPEND RUST_PART_CXX  ${CXX_BRIDGE}/src/ffi/sqlite.rs.cc)
