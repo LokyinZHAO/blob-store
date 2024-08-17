@@ -38,6 +38,7 @@ fn test_sqlite() {
 }
 
 #[test]
+#[cfg(feature = "memmap")]
 fn test_mapped_file() {
     let tmp_dir = tempfile::tempdir().unwrap();
     let store = MemMapStore::connect(tmp_dir.path()).unwrap();

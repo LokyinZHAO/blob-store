@@ -104,6 +104,23 @@ fn put_replace_not_exist(blob_store: &dyn BlobStore) {
     })
 }
 
+fn put_or_create(blob_store: &dyn BlobStore) {
+    let mut rng = rand::thread_rng();
+    let range = 0..4096;
+    let data = vec![0; range.len()];
+    (0..LOAD).for_each(|_| {
+        let key: Key = rng.gen();
+        let is_replace = rng.gen_bool(0.5);
+        if is_replace {
+            assert!(blob_store
+                .put(key, &data[..4096 / 2], PutOpt::Create)
+                .is_ok());
+        }
+        assert!(blob_store.put(key, &data, PutOpt::ReplaceOrCreate).is_ok());
+        assert!(blob_store.get_owned(key, GetOpt::All).unwrap() == data);
+    })
+}
+
 fn delete_not_exist(blob_store: &dyn BlobStore) {
     let mut rng = rand::thread_rng();
     (0..LOAD).for_each(|_| {
@@ -203,6 +220,7 @@ pub fn write_read(blob_store: &dyn BlobStore) {
     check_range(blob_store, &expect);
     put_exists(blob_store, &expect);
     check_delete(blob_store, &expect);
+    put_or_create(blob_store);
 }
 
 pub fn dump<F>(open: F)

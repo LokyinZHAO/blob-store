@@ -153,6 +153,7 @@ impl BlobStore for MemMapStore {
                 cache.put(key, page);
                 return Ok(());
             }
+            crate::PutOpt::ReplaceOrCreate => unimplemented!(),
         }
     }
 

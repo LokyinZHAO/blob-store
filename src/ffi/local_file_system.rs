@@ -31,6 +31,10 @@ impl LocalFileSystemBlobStoreFFI {
         )
     }
 
+    fn put_or_create(&self, key: u64, value: &[u8]) -> crate::error::Result<()> {
+        self.0.put(key.as_key(), value, PutOpt::ReplaceOrCreate)
+    }
+
     fn get_all(&self, key: u64, buf: &mut [u8]) -> crate::error::Result<()> {
         self.0.get(key.as_key(), buf, GetOpt::All)
     }
@@ -55,6 +59,7 @@ mod ffi {
         fn blob_size(&self, key: u64) -> Result<usize>;
         fn create(&self, key: u64, value: &[u8]) -> Result<()>;
         fn put(&self, key: u64, value: &[u8], offset: usize) -> Result<()>;
+        fn put_or_create(&self, key: u64, value: &[u8]) -> Result<()>;
         fn get_all(&self, key: u64, buf: &mut [u8]) -> Result<()>;
         fn get_offset(&self, key: u64, buf: &mut [u8], offset: usize) -> Result<()>;
         #[cxx_name = "remove"]

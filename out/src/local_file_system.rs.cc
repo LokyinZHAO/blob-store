@@ -633,6 +633,7 @@ struct blob_store_t final : public ::rust::Opaque {
   ::std::size_t blob_size(::std::uint64_t key) const;
   void create(::std::uint64_t key, ::rust::Slice<::std::uint8_t const> value) const;
   void put(::std::uint64_t key, ::rust::Slice<::std::uint8_t const> value, ::std::size_t offset) const;
+  void put_or_create(::std::uint64_t key, ::rust::Slice<::std::uint8_t const> value) const;
   void get_all(::std::uint64_t key, ::rust::Slice<::std::uint8_t > buf) const;
   void get_offset(::std::uint64_t key, ::rust::Slice<::std::uint8_t > buf, ::std::size_t offset) const;
   void remove(::std::uint64_t key) const;
@@ -660,6 +661,8 @@ extern "C" {
 ::rust::repr::PtrLen blob_store$local_fs$cxxbridge1$blob_store_t$create(::blob_store::local_fs::blob_store_t const &self, ::std::uint64_t key, ::rust::Slice<::std::uint8_t const> value) noexcept;
 
 ::rust::repr::PtrLen blob_store$local_fs$cxxbridge1$blob_store_t$put(::blob_store::local_fs::blob_store_t const &self, ::std::uint64_t key, ::rust::Slice<::std::uint8_t const> value, ::std::size_t offset) noexcept;
+
+::rust::repr::PtrLen blob_store$local_fs$cxxbridge1$blob_store_t$put_or_create(::blob_store::local_fs::blob_store_t const &self, ::std::uint64_t key, ::rust::Slice<::std::uint8_t const> value) noexcept;
 
 ::rust::repr::PtrLen blob_store$local_fs$cxxbridge1$blob_store_t$get_all(::blob_store::local_fs::blob_store_t const &self, ::std::uint64_t key, ::rust::Slice<::std::uint8_t > buf) noexcept;
 
@@ -712,6 +715,13 @@ void blob_store_t::create(::std::uint64_t key, ::rust::Slice<::std::uint8_t cons
 
 void blob_store_t::put(::std::uint64_t key, ::rust::Slice<::std::uint8_t const> value, ::std::size_t offset) const {
   ::rust::repr::PtrLen error$ = blob_store$local_fs$cxxbridge1$blob_store_t$put(*this, key, value, offset);
+  if (error$.ptr) {
+    throw ::rust::impl<::rust::Error>::error(error$);
+  }
+}
+
+void blob_store_t::put_or_create(::std::uint64_t key, ::rust::Slice<::std::uint8_t const> value) const {
+  ::rust::repr::PtrLen error$ = blob_store$local_fs$cxxbridge1$blob_store_t$put_or_create(*this, key, value);
   if (error$.ptr) {
     throw ::rust::impl<::rust::Error>::error(error$);
   }

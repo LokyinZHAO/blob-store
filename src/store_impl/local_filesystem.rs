@@ -74,6 +74,10 @@ impl BlobStore for LocalFileSystemBlobStore {
                 open_opt.create_new(true)
             }
             PutOpt::Replace(_) => open_opt.create(false),
+            PutOpt::ReplaceOrCreate => {
+                std::fs::create_dir_all(path.parent().unwrap())?;
+                open_opt.create(true)
+            }
         };
         let mut file = open_opt.open(path).map_err(|e| match e.kind() {
             std::io::ErrorKind::AlreadyExists => {
@@ -94,6 +98,10 @@ impl BlobStore for LocalFileSystemBlobStore {
                     return Err(Error::from(crate::error::BlobError::RangeError));
                 }
                 file.seek(std::io::SeekFrom::Start(range.start.try_into().unwrap()))?;
+            }
+            PutOpt::ReplaceOrCreate => {
+                file.set_len(value.len().try_into().unwrap())?;
+                file.seek(std::io::SeekFrom::Start(0))?;
             }
         }
         file.write_all(value).map_err(Error::from)

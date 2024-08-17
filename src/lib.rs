@@ -33,6 +33,8 @@ impl KeyLike for u64 {
 pub enum PutOpt {
     /// Create the blob if it doesn't exist, fail if it does.
     Create,
+    /// Replace the blob content if it exists, create it if it doesn't.
+    ReplaceOrCreate,
     /// Replace the blob content if it exists, fail if it doesn't.
     Replace(BlobRange),
 }

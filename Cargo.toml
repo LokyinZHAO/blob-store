@@ -28,7 +28,7 @@ rand = "0.8.5"
 cxx-build = "1.0.124"
 
 [features]
-default = ["local_fs", "memmap"]
+default = ["local_fs"]
 local_fs = []
 sqlite = ["rusqlite"]
 rusqlite = ["dep:rusqlite"]

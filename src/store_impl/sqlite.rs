@@ -123,6 +123,7 @@ impl BlobStore for SqliteBlobStore {
                 blob.seek(std::io::SeekFrom::Start((range.start).try_into().unwrap()))?;
                 blob
             }
+            crate::PutOpt::ReplaceOrCreate => unimplemented!(),
         };
         blob.write_all(value)?;
         Ok(())

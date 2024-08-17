@@ -572,6 +572,7 @@ struct blob_store_t final : public ::rust::Opaque {
   ::std::size_t blob_size(::std::uint64_t key) const;
   void create(::std::uint64_t key, ::rust::Slice<::std::uint8_t const> value) const;
   void put(::std::uint64_t key, ::rust::Slice<::std::uint8_t const> value, ::std::size_t offset) const;
+  void put_or_create(::std::uint64_t key, ::rust::Slice<::std::uint8_t const> value) const;
   void get_all(::std::uint64_t key, ::rust::Slice<::std::uint8_t > buf) const;
   void get_offset(::std::uint64_t key, ::rust::Slice<::std::uint8_t > buf, ::std::size_t offset) const;
   void remove(::std::uint64_t key) const;
