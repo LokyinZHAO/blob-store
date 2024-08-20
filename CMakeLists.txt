@@ -44,12 +44,12 @@ add_custom_command(
         ${CMAKE_CURRENT_SOURCE_DIR}/src/ffi/local_file_system.rs
         ${CMAKE_CURRENT_SOURCE_DIR}/src/ffi/sqlite.rs
         ${CMAKE_CURRENT_SOURCE_DIR}/src/ffi/memmap.rs
-    COMMENT "Building Rust artifacts"
+    COMMENT "Building Blob-Store Rust artifacts"
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
 add_custom_target(
-    dump_bundle_out
+    dump_blob_store_bundle_out
     # OUTPUT ${RUST_PART_CXX} ${RUST_PART_LIB}
     # COMMAND ${CMAKE_COMMAND} -E echo "Environment variable RUST_FLAGS is $ENV{RUSTFLAGS}"
     COMMAND CARGO_TARGET_DIR=${CARGO_TARGET} ${CARGO_CMD} ${CARGO_FEATURES}
@@ -67,7 +67,7 @@ add_custom_target(
         ${CMAKE_CURRENT_SOURCE_DIR}/src/ffi/local_file_system.rs
         ${CMAKE_CURRENT_SOURCE_DIR}/src/ffi/sqlite.rs
         ${CMAKE_CURRENT_SOURCE_DIR}/src/ffi/memmap.rs
-    COMMENT "Copying Rust artifacts to the output directory"
+    COMMENT "Copying Blob Store Rust artifacts to the output directory"
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 )
 target_link_libraries(blob-store-rs ${RUST_PART_LIB})
